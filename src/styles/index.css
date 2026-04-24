@@ -1,0 +1,45 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+/* Leaflet map container fix */
+.leaflet-container {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  z-index: 0;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18) !important;
+  border: 1.5px solid #E2E8F0 !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px !important;
+}
+
+.leaflet-popup-tip {
+  box-shadow: none !important;
+}
+
+.leaflet-attribution-flag { display: none !important; }
+
+/* IIT Delhi tooltip style */
+.iitd-tooltip {
+  background: white !important;
+  border: 1.5px solid #E8D0D0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 16px rgba(139,26,26,0.12) !important;
+  padding: 6px 10px !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+.iitd-tooltip::before { display: none !important; }
+
+/* Route polyline animation */
+.leaflet-interactive { transition: opacity 0.3s ease; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+}
