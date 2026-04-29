@@ -23,11 +23,23 @@ const ECO_FACTS = [
   'Walking daily reduces stress and improves focus for exams 🧠',
 ];
 
+type LiveLocationRow = {
+  user_id: string;
+  lat: number;
+  lng: number;
+  updated_at: string;
+};
+
+type LiveUserProfile = {
+  name: string;
+  emoji: string;
+};
+
 // LHC is the default destination for locate preview
 const LHC = CAMPUS_LOCATIONS.find(l => l.id === 'lhc')!;
-const VITE_ENV = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
-const GPS_DEVICE_ID = VITE_ENV?.VITE_GPS_DEVICE_ID || 'arduino_gps_1';
-const GPS_FRESHNESS_SECONDS = 3600 * 4; // 4 hours
+const LIVE_USER_FRESHNESS_SECONDS = 30;
+const LIVE_PUBLISH_INTERVAL_MS = 8000;
+const LIVE_PUBLISH_MIN_MOVE_METERS = 10;
 
 const SUPABASE_CLIENT_KEY = '__iitd_home_supabase_client';
 function getSupabase(): SupabaseClient {
@@ -60,8 +72,15 @@ export function HomeScreen() {
   const [showMotivation, setShowMotivation] = useState(false);
   const [motivationFact] = useState(() => ECO_FACTS[Math.floor(Math.random() * ECO_FACTS.length)]);
   const [selectedDestination, setSelectedDestination] = useState<typeof CAMPUS_LOCATIONS[0] | null>(null);
+  const [liveLocations, setLiveLocations] = useState<Record<string, LiveLocationRow>>({});
+  const [liveProfiles, setLiveProfiles] = useState<Record<string, LiveUserProfile>>({});
 
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const staleCleanupRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const geoWatchRef = useRef<number | null>(null);
+  const lastPublishedRef = useRef<{ lat: number; lng: number; at: number } | null>(null);
+  const liveChannelRef = useRef<any>(null);
+  const activeUserIdRef = useRef<string | null>(null);
 
   // Show motivation popup once per session
   useEffect(() => {
@@ -122,39 +141,147 @@ export function HomeScreen() {
       - haversine(userLoc[0], userLoc[1], b.lat, b.lng);
   })[0];
 
-  const loadLatestGpsFromSupabase = async () => {
+  const isLocationFresh = (updatedAt: string) => {
+    const ts = Date.parse(updatedAt);
+    if (!Number.isFinite(ts)) return false;
+    return (Date.now() - ts) / 1000 <= LIVE_USER_FRESHNESS_SECONDS;
+  };
+
+  const deleteLiveLocationByUserId = async (userId: string) => {
+    try {
+      const supabase = getSupabase();
+      await supabase.from('user_live_locations').delete().eq('user_id', userId);
+    } catch (err) {
+      console.error('Failed to remove live location row:', err);
+    }
+  };
+
+  const loadProfilesForUsers = async (userIds: string[]) => {
+    const missingIds = userIds.filter(id => !liveProfiles[id]);
+    if (missingIds.length === 0) return;
     try {
       const supabase = getSupabase();
       const { data, error } = await supabase
-        .from('device_locations')
-        .select('lat,lng,updated_at')
-        .eq('device_id', GPS_DEVICE_ID)
-        .single();
-
-      if (error || !data) {
-        setGpsWarning('GPS device offline, using current map location.');
-        return;
-      }
-
-      const updatedAtMs = Date.parse(data.updated_at);
-      const nowMs = Date.now();
-      const ageSeconds = Math.max(0, (nowMs - updatedAtMs) / 1000);
-      if (!Number.isFinite(updatedAtMs) || ageSeconds > GPS_FRESHNESS_SECONDS) {
-        setGpsWarning('GPS data is stale, check USB cable or uploader script.');
-        return;
-      }
-
-      setGpsWarning('');
-      setUserLoc([data.lat, data.lng]);
+        .from('profiles')
+        .select('id,name,profile_emoji,avatar')
+        .in('id', missingIds);
+      if (error || !data) return;
+      setLiveProfiles(prev => {
+        const next = { ...prev };
+        for (const p of data) {
+          next[p.id] = {
+            name: p.name || 'Campus User',
+            emoji: p.profile_emoji || p.avatar || '🙂',
+          };
+        }
+        return next;
+      });
     } catch (err) {
-      console.error('Failed to load GPS from Supabase:', err);
-      setGpsWarning('Could not fetch live GPS, using current map location.');
+      console.error('Failed to load live user profiles:', err);
+    }
+  };
+
+  const loadInitialLiveLocations = async () => {
+    try {
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from('user_live_locations')
+        .select('user_id,lat,lng,updated_at');
+      if (error || !data) return;
+
+      const rows = data as LiveLocationRow[];
+      setLiveLocations(() => {
+        const next: Record<string, LiveLocationRow> = {};
+        for (const row of rows) {
+          if (isLocationFresh(row.updated_at)) {
+            next[row.user_id] = row;
+          }
+        }
+        return next;
+      });
+      void loadProfilesForUsers(rows.map(r => r.user_id));
+    } catch (err) {
+      console.error('Failed to load live user locations:', err);
+    }
+  };
+
+  const publishMyLocation = async (lat: number, lng: number, force = false) => {
+    if (!user?.id) return;
+    const last = lastPublishedRef.current;
+    const now = Date.now();
+    const movedMeters = last ? haversine(last.lat, last.lng, lat, lng) * 1000 : Infinity;
+    const elapsedMs = last ? now - last.at : Infinity;
+    if (!force && movedMeters < LIVE_PUBLISH_MIN_MOVE_METERS && elapsedMs < LIVE_PUBLISH_INTERVAL_MS) {
+      return;
+    }
+
+    setUserLoc([lat, lng]);
+    lastPublishedRef.current = { lat, lng, at: now };
+    try {
+      const supabase = getSupabase();
+      await supabase.from('user_live_locations').upsert({
+        user_id: user.id,
+        lat,
+        lng,
+        updated_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error('Failed to publish live location:', err);
+    }
+  };
+
+  const startLiveLocationSharing = async (): Promise<boolean> => {
+    if (!user?.id) {
+      setGpsWarning('Please log in before using Locate.');
+      return false;
+    }
+    if (!navigator.geolocation) {
+      setGpsWarning('Location services are not supported in this browser.');
+      return false;
+    }
+
+    return new Promise(resolve => {
+      navigator.geolocation.getCurrentPosition(
+        async pos => {
+          setGpsWarning('');
+          await publishMyLocation(pos.coords.latitude, pos.coords.longitude, true);
+          if (geoWatchRef.current === null) {
+            geoWatchRef.current = navigator.geolocation.watchPosition(
+              watchPos => {
+                void publishMyLocation(watchPos.coords.latitude, watchPos.coords.longitude);
+              },
+              () => {
+                setGpsWarning('Live location permission denied or unavailable.');
+              },
+              { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+            );
+          }
+          resolve(true);
+        },
+        () => {
+          setGpsWarning('Could not access your location. Enable GPS and try again.');
+          resolve(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  };
+
+  const stopLiveLocationSharing = async (userIdToRemove?: string) => {
+    if (geoWatchRef.current !== null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(geoWatchRef.current);
+      geoWatchRef.current = null;
+    }
+    lastPublishedRef.current = null;
+    if (userIdToRemove) {
+      await deleteLiveLocationByUserId(userIdToRemove);
     }
   };
 
   const startPing = async () => {
     setShowPingConfirm(false);
-    await loadLatestGpsFromSupabase();
+    const sharingStarted = await startLiveLocationSharing();
+    if (!sharingStarted) return;
     setMapUnlocked(true);
     setPinging(true);
     setPingRadius(0);
@@ -169,12 +296,96 @@ export function HomeScreen() {
           setPinging(false);
           setPingRadius(0);
           setPingSuccess(true);
-          setPingCount(Math.floor(Math.random() * 2) + 2);
+          setPingCount(Math.max(1, Object.keys(liveLocations).length));
           setTimeout(() => setPingSuccess(false), 4000);
         }, 300);
       }
     }, 45);
   };
+
+  useEffect(() => {
+    if (!user?.id) {
+      setLiveLocations({});
+      setLiveProfiles({});
+      return;
+    }
+    const supabase = getSupabase();
+    void loadInitialLiveLocations();
+
+    const channel = supabase
+      .channel('user_live_locations_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_live_locations' },
+        payload => {
+          const evt = payload.eventType;
+          if (evt === 'DELETE') {
+            const oldRow = payload.old as { user_id?: string };
+            if (!oldRow?.user_id) return;
+            setLiveLocations(prev => {
+              if (!prev[oldRow.user_id]) return prev;
+              const next = { ...prev };
+              delete next[oldRow.user_id];
+              return next;
+            });
+            return;
+          }
+
+          const newRow = payload.new as LiveLocationRow;
+          if (!newRow?.user_id) return;
+          setLiveLocations(prev => ({ ...prev, [newRow.user_id]: newRow }));
+          void loadProfilesForUsers([newRow.user_id]);
+        }
+      )
+      .subscribe();
+
+    liveChannelRef.current = channel;
+    return () => {
+      if (liveChannelRef.current) {
+        void supabase.removeChannel(liveChannelRef.current);
+        liveChannelRef.current = null;
+      }
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    staleCleanupRef.current = setInterval(() => {
+      setLiveLocations(prev => {
+        const next: Record<string, LiveLocationRow> = {};
+        for (const [userId, row] of Object.entries(prev)) {
+          if (isLocationFresh(row.updated_at)) next[userId] = row;
+        }
+        return next;
+      });
+    }, 10000);
+    return () => {
+      if (staleCleanupRef.current) clearInterval(staleCleanupRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    const previousUserId = activeUserIdRef.current;
+    const currentUserId = user?.id ?? null;
+    if (previousUserId && previousUserId !== currentUserId) {
+      void stopLiveLocationSharing(previousUserId);
+    }
+    if (!currentUserId) {
+      if (geoWatchRef.current !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(geoWatchRef.current);
+        geoWatchRef.current = null;
+      }
+      lastPublishedRef.current = null;
+    }
+    activeUserIdRef.current = currentUserId;
+  }, [user?.id]);
+
+  useEffect(() => {
+    return () => {
+      if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
+      const currentUserId = activeUserIdRef.current;
+      void stopLiveLocationSharing(currentUserId ?? undefined);
+    };
+  }, []);
 
   const filteredLocations = CAMPUS_LOCATIONS.filter(l =>
     l.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -187,6 +398,15 @@ export function HomeScreen() {
   });
 
   const displayAvatar = user?.profileEmoji ?? user?.avatar ?? 'U';
+  const liveUserMarkers = Object.values(liveLocations)
+    .filter(row => row.user_id !== user?.id && isLocationFresh(row.updated_at))
+    .map(row => ({
+      id: row.user_id,
+      lat: row.lat,
+      lng: row.lng,
+      name: liveProfiles[row.user_id]?.name || 'Campus User',
+      emoji: liveProfiles[row.user_id]?.emoji || '🙂',
+    }));
 
   return (
     <div className="relative w-full h-full" style={{ background: '#FBF5F5' }}>
@@ -212,6 +432,7 @@ export function HomeScreen() {
           onLocationUpdate={setUserLoc}
           selectedAutoId={selectedAuto?.id}
           route={route}
+          liveUsers={mapUnlocked ? liveUserMarkers : []}
         />
       </div>
 

@@ -15,6 +15,7 @@ interface Props {
   buses?: MockBus[];
   busStops?: BusStop[];
   userLocation: [number, number] | null;
+  liveUsers?: { id: string; lat: number; lng: number; name: string; emoji: string }[];
   pinging: boolean;
   pingRadius: number;
   onAutoClick?: (auto: MockAuto) => void;
@@ -153,6 +154,28 @@ function createUserIcon() {
   });
 }
 
+function createLiveUserIcon(user: { name: string; emoji: string }) {
+  return L.divIcon({
+    html: `
+      <div style="position:relative;display:flex;flex-direction:column;align-items:center;cursor:pointer">
+        <div style="
+          background:white;border:2px solid #7C3AED;border-radius:999px;
+          width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+          box-shadow:0 3px 10px rgba(124,58,237,0.25);font-size:14px;
+        ">${user.emoji}</div>
+        <div style="
+          margin-top:3px;background:rgba(255,255,255,0.96);border:1px solid #DDD6FE;
+          border-radius:10px;padding:2px 7px;font-size:10px;font-weight:700;color:#5B21B6;
+          white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.12);
+          font-family:'Plus Jakarta Sans',sans-serif;
+        ">${user.name}</div>
+      </div>`,
+    className: '',
+    iconSize: [120, 48],
+    iconAnchor: [14, 32],
+  });
+}
+
 function createCheckpointIcon(n: number, mode: 'walk' | 'cycle', label: string) {
   const color = mode === 'walk' ? WALK_COLOR : CYCLE_COLOR;
   return L.divIcon({
@@ -200,13 +223,14 @@ function createDestinationIcon(name: string, mode: 'walk' | 'cycle') {
 
 export function IITDelhiMap({
   autos, buses = [], busStops = [], userLocation, pinging, pingRadius, onAutoClick,
-  onLocationUpdate, selectedAutoId, route
+  onLocationUpdate, selectedAutoId, route, liveUsers = []
 }: Props) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const autoMarkersRef = useRef<Map<number, L.Marker>>(new Map());
   const busMarkersRef = useRef<Map<number, L.Marker>>(new Map());
+  const liveUserMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   const pingCircleRef = useRef<L.Circle | null>(null);
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
 
@@ -340,6 +364,42 @@ export function IITDelhiMap({
       }
     });
   }, [buses]);
+
+  // Live user markers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const nextIds = new Set(liveUsers.map(u => u.id));
+
+    // Remove users no longer active
+    for (const [userId, marker] of liveUserMarkersRef.current.entries()) {
+      if (!nextIds.has(userId)) {
+        marker.remove();
+        liveUserMarkersRef.current.delete(userId);
+      }
+    }
+
+    // Upsert active markers
+    for (const u of liveUsers) {
+      const pos: [number, number] = [u.lat, u.lng];
+      const existing = liveUserMarkersRef.current.get(u.id);
+      if (existing) {
+        existing.setLatLng(pos);
+        existing.setIcon(createLiveUserIcon({ name: u.name, emoji: u.emoji }));
+      } else {
+        const marker = L.marker(pos, { icon: createLiveUserIcon({ name: u.name, emoji: u.emoji }), zIndexOffset: 850 })
+          .addTo(map)
+          .bindPopup(`
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;min-width:150px">
+              <div style="font-weight:700;color:#5B21B6">${u.emoji} ${u.name}</div>
+              <div style="font-size:11px;color:#6B6B6B;margin-top:3px">Live location sharing</div>
+            </div>
+          `, { maxWidth: 190 });
+        liveUserMarkersRef.current.set(u.id, marker);
+      }
+    }
+  }, [liveUsers]);
 
   // Selected auto
   useEffect(() => {
