@@ -64,6 +64,7 @@ export function HomeScreen() {
   const [pingCount, setPingCount] = useState(0);
   const [showPingConfirm, setShowPingConfirm] = useState(false);
   const [gpsWarning, setGpsWarning] = useState('');
+  const [liveSyncWarning, setLiveSyncWarning] = useState('');
   const [selectedAuto, setSelectedAuto] = useState<MockAuto | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -150,7 +151,10 @@ export function HomeScreen() {
   const deleteLiveLocationByUserId = async (userId: string) => {
     try {
       const supabase = getSupabase();
-      await supabase.from('user_live_locations').delete().eq('user_id', userId);
+      const { error } = await supabase.from('user_live_locations').delete().eq('user_id', userId);
+      if (error) {
+        console.error('Failed to remove live location row:', error);
+      }
     } catch (err) {
       console.error('Failed to remove live location row:', err);
     }
@@ -165,7 +169,11 @@ export function HomeScreen() {
         .from('profiles')
         .select('id,name,profile_emoji,avatar')
         .in('id', missingIds);
-      if (error || !data) return;
+      if (error) {
+        console.error('Failed to load live user profiles:', error);
+        return;
+      }
+      if (!data) return;
       setLiveProfiles(prev => {
         const next = { ...prev };
         for (const p of data) {
@@ -187,7 +195,14 @@ export function HomeScreen() {
       const { data, error } = await supabase
         .from('user_live_locations')
         .select('user_id,lat,lng,updated_at');
-      if (error || !data) return;
+      if (error) {
+        console.error('Failed to load initial live user locations:', error);
+        setLiveSyncWarning('Unable to load live users right now. Please try Locate again.');
+        return;
+      }
+      if (!data) return;
+
+      setLiveSyncWarning('');
 
       const rows = data as LiveLocationRow[];
       setLiveLocations(() => {
@@ -219,14 +234,21 @@ export function HomeScreen() {
     lastPublishedRef.current = { lat, lng, at: now };
     try {
       const supabase = getSupabase();
-      await supabase.from('user_live_locations').upsert({
+      const { error } = await supabase.from('user_live_locations').upsert({
         user_id: user.id,
         lat,
         lng,
         updated_at: new Date().toISOString(),
       });
+      if (error) {
+        console.error('Failed to publish live location:', error);
+        setLiveSyncWarning('Live location publish failed. Check Supabase policies/network and try again.');
+        return;
+      }
+      setLiveSyncWarning('');
     } catch (err) {
       console.error('Failed to publish live location:', err);
+      setLiveSyncWarning('Live location publish failed. Check connection and try again.');
     }
   };
 
@@ -307,6 +329,7 @@ export function HomeScreen() {
     if (!user?.id) {
       setLiveLocations({});
       setLiveProfiles({});
+      setLiveSyncWarning('');
       return;
     }
     const supabase = getSupabase();
@@ -337,7 +360,17 @@ export function HomeScreen() {
           void loadProfilesForUsers([newRow.user_id]);
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Live locations realtime subscribed');
+          setLiveSyncWarning('');
+          return;
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.error('Live locations realtime subscription issue:', status, err);
+          setLiveSyncWarning('Live updates disconnected. Please refresh or tap Locate again.');
+        }
+      });
 
     liveChannelRef.current = channel;
     return () => {
@@ -597,6 +630,30 @@ export function HomeScreen() {
           >
             <span style={{ fontSize: '12px', fontWeight: 700, color: '#B45309' }}>
               {gpsWarning}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {!!liveSyncWarning && (
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            className="absolute z-30 px-4 py-2.5 rounded-2xl"
+            style={{
+              top: (!!gpsWarning || pingSuccess) ? '112px' : '68px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'rgba(255,255,255,0.96)',
+              border: '1.5px solid #F97316',
+              boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+              maxWidth: '90%',
+            }}
+          >
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#C2410C' }}>
+              {liveSyncWarning}
             </span>
           </motion.div>
         )}
