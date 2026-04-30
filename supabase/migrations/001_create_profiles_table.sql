@@ -37,36 +37,80 @@ CREATE TABLE IF NOT EXISTS stats (
 
 -- Enable RLS on profiles table
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+-- Create RLS policies for profiles (create only if missing)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'profiles'
+      AND policyname = 'users_can_read_profiles'
+  ) THEN
+    CREATE POLICY "users_can_read_profiles" ON profiles
+      FOR SELECT
+      USING (true);
+  END IF;
 
--- Create RLS policy: users can read any profile
-CREATE POLICY "users_can_read_profiles" ON profiles
-  FOR SELECT
-  USING (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'profiles'
+      AND policyname = 'users_can_update_own_profile'
+  ) THEN
+    CREATE POLICY "users_can_update_own_profile" ON profiles
+      FOR UPDATE
+      USING (auth.uid() = id);
+  END IF;
 
--- Create RLS policy: users can update their own profile
-CREATE POLICY "users_can_update_own_profile" ON profiles
-  FOR UPDATE
-  USING (auth.uid() = id);
-
--- Create RLS policy: users can insert their own profile
-CREATE POLICY "users_can_insert_own_profile" ON profiles
-  FOR INSERT
-  WITH CHECK (auth.uid() = id);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'profiles'
+      AND policyname = 'users_can_insert_own_profile'
+  ) THEN
+    CREATE POLICY "users_can_insert_own_profile" ON profiles
+      FOR INSERT
+      WITH CHECK (auth.uid() = id);
+  END IF;
+END
+$$;
 
 -- Enable RLS on stats table
 ALTER TABLE stats ENABLE ROW LEVEL SECURITY;
+-- Create RLS policies for stats (create only if missing)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'stats'
+      AND policyname = 'users_can_read_stats'
+  ) THEN
+    CREATE POLICY "users_can_read_stats" ON stats
+      FOR SELECT
+      USING (true);
+  END IF;
 
--- Create RLS policy: users can read any stats
-CREATE POLICY "users_can_read_stats" ON stats
-  FOR SELECT
-  USING (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'stats'
+      AND policyname = 'users_can_update_own_stats'
+  ) THEN
+    CREATE POLICY "users_can_update_own_stats" ON stats
+      FOR UPDATE
+      USING (auth.uid() = user_id);
+  END IF;
 
--- Create RLS policy: users can update their own stats
-CREATE POLICY "users_can_update_own_stats" ON stats
-  FOR UPDATE
-  USING (auth.uid() = user_id);
-
--- Create RLS policy: users can insert their own stats
-CREATE POLICY "users_can_insert_own_stats" ON stats
-  FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'stats'
+      AND policyname = 'users_can_insert_own_stats'
+  ) THEN
+    CREATE POLICY "users_can_insert_own_stats" ON stats
+      FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END
+$$;

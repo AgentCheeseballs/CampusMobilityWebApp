@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { MockAuto, MockBus, BusStop, ARAVALI_HOSTEL, CAMPUS_LOCATIONS } from '../data/mockData';
@@ -16,6 +16,7 @@ interface Props {
   busStops?: BusStop[];
   userLocation: [number, number] | null;
   liveUsers?: { id: string; lat: number; lng: number; name: string; emoji: string }[];
+  liveProfiles?: Record<string, { name: string; emoji: string }>;
   pinging: boolean;
   pingRadius: number;
   onAutoClick?: (auto: MockAuto) => void;
@@ -224,6 +225,7 @@ function createDestinationIcon(name: string, mode: 'walk' | 'cycle') {
 export function IITDelhiMap({
   autos, buses = [], busStops = [], userLocation, pinging, pingRadius, onAutoClick,
   onLocationUpdate, selectedAutoId, route, liveUsers = []
+  , liveProfiles = {}
 }: Props) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
