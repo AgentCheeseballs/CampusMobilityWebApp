@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Eye, EyeOff, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const DEPARTMENTS = ['CSE', 'EE', 'ME', 'CE', 'CH', 'PH', 'BB', 'MA', 'MS', 'HS', 'MnC'];
+const DEPARTMENTS = ['CSE', 'EE', 'ME', 'CE', 'CH', 'PH', 'BB', 'MA', 'MS', 'HS', 'MnC', 'DD'];
 const YEARS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year (Dual)', 'PhD'];
 
 // IIT Delhi official emblem – text-based

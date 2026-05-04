@@ -344,8 +344,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.warn('Stats creation warning (continuing):', statsError);
       }
 
-      // 4. Auto-login
-      return await login(data.email, data.password);
+      // 4. Attempt to initialize client state without re-signing-in to avoid
+      //    races between auth session and profile creation on the server.
+      // Try to load the full profile (server may have created it via hooks);
+      // if that fails, fall back to creating a temporary profile from auth data.
+      const profile = await loadProfile();
+      if (profile) {
+        setUser(profile);
+        return { success: true };
+      }
+
+      const authUser = authData.user;
+      if (authUser) {
+        const tempProfile: UserProfile = {
+          id: authUser.id,
+          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+          email: authUser.email || '',
+          rollNo: authUser.user_metadata?.rollNo || 'N/A',
+          department: authUser.user_metadata?.department || 'CSE',
+          year: authUser.user_metadata?.year || '1st Year',
+          avatar: 'U',
+          nickname: undefined,
+          hostel: undefined,
+          hasCycle: false,
+          profileEmoji: undefined,
+          createdAt: new Date().toISOString(),
+          stats: {
+            walkKm: 0,
+            cycleKm: 0,
+            autoRides: 0,
+            co2Saved: 0,
+            streak: 0,
+            ecoScore: 0,
+          },
+        };
+        setUser(tempProfile);
+        return { success: true };
+      }
+
+      return { success: false, error: 'Failed to initialize user after signup.' };
     } catch (err: any) {
       console.error('Signup error:', err);
       return { success: false, error: err.message ?? 'Signup failed.' };

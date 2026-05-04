@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   LogOut, TrendingUp, Award, Leaf, Battery, Zap,
@@ -26,6 +27,7 @@ const RANK_COLORS = [
 
 export function ProfileScreen() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<'stats' | 'leaderboard'>('stats');
   const [selectedAchievement, setSelectedAchievement] = useState<typeof ACHIEVEMENTS[0] | null>(null);
 
@@ -116,7 +118,22 @@ export function ProfileScreen() {
                 <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '1px' }}>{user.rollNo}</div>
               </div>
             </div>
-            <button onClick={logout}
+            <button
+              onClick={async () => {
+                try {
+                  await logout();
+                  // Prefer SPA navigation, but force a full reload as a fallback
+                  navigate('/', { replace: true });
+                  setTimeout(() => {
+                    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+                      window.location.href = '/';
+                    }
+                  }, 200);
+                } catch (err) {
+                  console.error('Logout failed from UI:', err);
+                  try { window.location.href = '/'; } catch {}
+                }
+              }}
               className="w-9 h-9 flex items-center justify-center rounded-xl"
               style={{ background: 'rgba(255,255,255,0.1)' }}>
               <LogOut size={15} color="rgba(255,255,255,0.7)" />
