@@ -212,6 +212,7 @@ export function ComparisonScreen() {
   const s2 = CAMPUS_SHUTTLE_SCHEDULE.S2;
   const s1Next = getNextDeparture(s1.departures);
   const s2Next = getNextDeparture(s2.departures);
+  const forcedBusMins: Record<'S1' | 'S2', number> = { S1: 29, S2: 53 };
 
   const fetchLocation = () => {
     setLocLoading(true);
@@ -352,45 +353,43 @@ export function ComparisonScreen() {
         initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setSelected(p => p === 'walk' ? null : 'walk')}
-        className="mx-3 md:mx-0 mb-1.5 rounded-2xl flex-shrink-0 text-left relative overflow-hidden"
+        className="w-[calc(100%-24px)] md:w-full mx-3 md:mx-0 mb-1.5 rounded-2xl flex-shrink-0 text-left relative overflow-hidden"
         style={{
           background: 'white',
-          border: selected === 'walk' ? '2px solid #22C55E' : '1.5px solid #EAEAEA',
-          boxShadow: selected === 'walk' ? '0 4px 16px rgba(34,197,94,0.1)' : '0 1px 3px rgba(0,0,0,0.04)',
+          border: selected === 'walk' ? '2px solid #8B1A1A' : '1.5px solid #EAEAEA',
+          boxShadow: selected === 'walk' ? '0 4px 16px rgba(139,26,26,0.1)' : '0 1px 3px rgba(0,0,0,0.04)',
           transition: 'all 0.2s',
           padding: '10px 12px',
         }}
       >
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+            style={{ background: '#FDF4F4', border: '1px solid #E8D0D0' }}>
             <span style={{ fontSize: '20px' }}>🚶</span>
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
               <span style={{ fontSize: '14px', fontWeight: 800, color: '#1A1A1A' }}>Walk</span>
               <span className="px-1.5 py-px rounded-full"
-                style={{ fontSize: '9px', fontWeight: 800, color: 'white', background: '#22C55E' }}>
+                style={{ fontSize: '9px', fontWeight: 800, color: 'white', background: '#8B1A1A' }}>
                 🌿 FREE
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-x-1.5" style={{ fontSize: '11px', color: '#64748B' }}>
               <span>🔥 {displayCalories('walk')} kcal</span>
-              <span>·</span>
-              <span>🌿 {co2Saved(displayDist)}kg CO₂</span>
             </div>
           </div>
           <div className="text-right flex-shrink-0 pr-7">
-            <div style={{ fontSize: '24px', fontWeight: 900, color: '#15803D', lineHeight: 1 }}>
+            <div style={{ fontSize: '24px', fontWeight: 900, color: '#8B1A1A', lineHeight: 1 }}>
               {isDemoDist ? '24' : Math.ceil(displayWalkSec / 60)}
             </div>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: '#15803D', opacity: 0.8 }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#8B1A1A', opacity: 0.8 }}>
               {isDemoDist ? 'sec' : 'min'}
             </div>
           </div>
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             {selected === 'walk' ? (
-              <div className="w-5 h-5 rounded-full bg-[#22C55E] flex items-center justify-center border-2 border-white shadow-sm">
+              <div className="w-5 h-5 rounded-full bg-[#8B1A1A] flex items-center justify-center border-2 border-white shadow-sm">
                 <CheckCircle2 size={13} color="white" strokeWidth={3} />
               </div>
             ) : (
@@ -401,9 +400,9 @@ export function ComparisonScreen() {
         
         <div className="mt-2 flex items-center gap-2">
           <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-            <motion.div initial={{ width: 0 }} animate={{ width: '70%' }} className="h-full rounded-full bg-[#22C55E]" />
+            <motion.div initial={{ width: 0 }} animate={{ width: '70%' }} className="h-full rounded-full bg-[#8B1A1A]" />
           </div>
-          <span style={{ fontSize: '10px', color: '#16A34A', fontWeight: 700 }}>
+          <span style={{ fontSize: '10px', color: '#8B1A1A', fontWeight: 700 }}>
             4.5 km/h · {formatDist(displayDist)}
           </span>
         </div>
@@ -414,7 +413,7 @@ export function ComparisonScreen() {
         initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setSelected(p => p === 'cycle' ? null : 'cycle')}
-        className="mx-3 md:mx-0 mb-2 rounded-2xl flex-shrink-0 text-left relative overflow-hidden"
+        className="w-[calc(100%-24px)] md:w-full mx-3 md:mx-0 mb-2 rounded-2xl flex-shrink-0 text-left relative overflow-hidden"
         style={{
           background: 'white',
           border: selected === 'cycle' ? '2px solid #8B1A1A' : '1.5px solid #EAEAEA',
@@ -438,10 +437,6 @@ export function ComparisonScreen() {
             </div>
             <div className="flex flex-wrap items-center gap-x-1.5" style={{ fontSize: '11px', color: '#64748B' }}>
               <span>🔥 {displayCalories('cycle')} kcal</span>
-              <span>·</span>
-              <span>🌿 {co2Saved(displayDist)}kg CO₂</span>
-              <span>·</span>
-              <span style={{ color: '#8B1A1A', fontWeight: 700 }}>₹5–10</span>
             </div>
           </div>
           <div className="text-right flex-shrink-0 pr-7">
@@ -552,20 +547,22 @@ export function ComparisonScreen() {
             { key: 'S2', schedule: s2, next: s2Next },
           ] as const).map(({ key, schedule, next }) => (
             <div key={key} className="flex items-center gap-2.5 px-2.5 py-2.5 rounded-xl"
-              style={{ background: key === 'S1' ? '#EFF6FF' : '#F0FDF4', border: `1px solid ${key === 'S1' ? '#BFDBFE' : '#BBF7D0'}` }}>
+              style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
               <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: schedule.color }}>
+                style={{ background: '#2563EB' }}>
                 <span style={{ fontSize: '14px', color: 'white', fontWeight: 800 }}>{key}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#1A1A1A' }}>{schedule.name}</div>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#1A1A1A' }}>
+                  {key === 'S1' ? 'Shuttle 1' : 'Shuttle 2'}
+                </div>
                 <div style={{ fontSize: '10px', color: '#64748B' }}>
                   {schedule.route.join(' → ')}
                 </div>
               </div>
               <div className="text-right flex-shrink-0">
-                <div style={{ fontSize: '14px', fontWeight: 800, color: schedule.color }}>
-                  {next.minsAway} min
+                <div style={{ fontSize: '14px', fontWeight: 800, color: '#2563EB' }}>
+                  {forcedBusMins[key]} min
                 </div>
                 <div style={{ fontSize: '9px', color: '#94A3B8' }}>
                   Next: {next.next}
@@ -581,6 +578,14 @@ export function ComparisonScreen() {
               Frequency: {s1.frequency} · Loop time: {s1.loopTime}–{s2.loopTime} min
             </span>
           </div>
+
+          <button
+            onClick={() => window.open('https://commute.iitd.ac.in/#/Live_Location', '_blank', 'noopener,noreferrer')}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl"
+            style={{ background: 'linear-gradient(135deg,#1D4ED8,#2563EB)', boxShadow: '0 4px 14px rgba(37,99,235,0.25)' }}
+          >
+            <span style={{ fontSize: '13px', fontWeight: 700, color: 'white' }}>Track Campus Buses</span>
+          </button>
         </div>
       </motion.div>
 
@@ -600,14 +605,14 @@ export function ComparisonScreen() {
         {/* Header always visible */}
         <div className="flex items-center gap-3 px-3 pt-3 pb-2" style={{ borderBottom: '1px solid #F8F5F5' }}>
           <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: '#FEF9C3', border: '1.5px solid #FDE68A' }}>
+            style={{ background: '#FDF4F4', border: '1.5px solid #E8D0D0' }}>
             <span style={{ fontSize: '20px' }}>🛺</span>
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-1.5">
               <span style={{ fontSize: '14px', fontWeight: 700, color: '#1A1A1A' }}>Auto Rickshaw</span>
               <span className="px-1.5 py-0.5 rounded-full"
-                style={{ fontSize: '9px', fontWeight: 700, color: '#92400E', background: '#FEF3C7' }}>
+                style={{ fontSize: '9px', fontWeight: 700, color: '#8B1A1A', background: '#FDF4F4', border: '1px solid #E8D0D0' }}>
                 SHARED
               </span>
             </div>
@@ -616,80 +621,21 @@ export function ComparisonScreen() {
             </div>
           </div>
           <div className="text-right flex-shrink-0">
-            <div style={{ fontSize: '14px', fontWeight: 800, color: '#92400E', lineHeight: 1.1 }}>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: '#8B1A1A', lineHeight: 1.1 }}>
               {autoT.main}
             </div>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: '#92400E', opacity: 0.7 }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#8B1A1A', opacity: 0.7 }}>
               {autoT.sub}
             </div>
           </div>
         </div>
 
-        {/* Ad gate or revealed content */}
-        {!autoAdWatched ? (
-          /* ─── AD GATE ─── */
-          <div className="px-3 py-3">
-            {!adPlaying ? (
-              <div className="flex flex-col items-center gap-2.5 py-2">
-                
-                <button
-                  onClick={startAd}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl"
-                  style={{
-                    background: 'linear-gradient(135deg,#F59E0B,#D97706)',
-                    boxShadow: '0 6px 20px rgba(245,158,11,0.3)',
-                  }}
-                >
-                  <Play size={14} color="white" fill="white" strokeWidth={2} />
-                  <span style={{ fontSize: '14px', fontWeight: 700, color: 'white' }}>
-                    🎬 Watch 5s Ad to View Info
-                  </span>
-                </button>
-                <p style={{ fontSize: '10px', color: '#9B7070', textAlign: 'center' }}>
-                  Free app — ads keep campus transit data running!
-                </p>
-              </div>
-            ) : (
-              /* ─── AD PLAYING ─── */
-              <div className="flex flex-col gap-2">
-                {/* Mock Ad Creative */}
-                <div className="rounded-2xl overflow-hidden relative"
-                  style={{ background: currentAdBrand.bg, border: `1.5px solid ${currentAdBrand.color}22`, minHeight: '100px' }}>
-                  <div className="px-4 py-4 flex flex-col items-center justify-center gap-2">
-                    <span style={{ fontSize: '32px' }}>{currentAdBrand.emoji}</span>
-                    <div style={{ fontSize: '16px', fontWeight: 800, color: currentAdBrand.color }}>{currentAdBrand.name}</div>
-                    <div style={{ fontSize: '12px', color: '#64748B' }}>{currentAdBrand.tagline}</div>
-                    <div className="px-3 py-1.5 rounded-full mt-1"
-                      style={{ background: currentAdBrand.color }}>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'white' }}>Learn More</span>
-                    </div>
-                  </div>
-                  {/* AD badge */}
-                  <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded"
-                    style={{ background: 'rgba(0,0,0,0.35)' }}>
-                    <span style={{ fontSize: '9px', fontWeight: 700, color: 'white' }}>AD</span>
-                  </div>
-                  {/* Countdown badge */}
-                  <div className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center"
-                    style={{ background: 'rgba(0,0,0,0.55)' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 800, color: 'white' }}>{adCountdown}</span>
-                  </div>
-                </div>
-                {/* Progress bar */}
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#F0EEEE' }}>
-                  <motion.div
-                    style={{ width: `${adProgress * 100}%`, background: currentAdBrand.color, height: '100%', borderRadius: '999px' }}
-                  />
-                </div>
-                <p style={{ fontSize: '10px', color: '#9B7070', textAlign: 'center' }}>
-                  Ad plays… {adCountdown}s remaining
-                </p>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* ─── REVEALED AUTO DETAILS ─── */
-          <div className="px-3 py-3">
+        {/* Ad gate removed — always show details */}
+        {/*
+          Previous (ad-gated) UI:
+          {!autoAdWatched ? ( ...ad gate / 5s ad... ) : ( ...revealed auto details... )}
+        */}
+        <div className="px-3 py-3">
             <div className="flex items-center gap-3 mb-3">
               <div className="flex-1">
                 <div style={{ fontSize: '11px', color: '#9B7070', marginBottom: '2px' }}>
@@ -702,13 +648,13 @@ export function ComparisonScreen() {
                     { seats: '1 seat free', driver: 'Suresh Y.', rating: 4.6, ev: true, dist: '280m' },
                   ].map((a, i) => (
                     <div key={i} className="flex items-center gap-2 px-2.5 py-2 rounded-xl"
-                      style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                      style={{ background: '#FDF4F4', border: '1px solid #E8D0D0' }}>
                       <span style={{ fontSize: '16px' }}>🛺</span>
                       <div className="flex-1">
                         <div style={{ fontSize: '11px', fontWeight: 700, color: '#1A1A1A' }}>
                           {a.driver} · {a.seats}
                         </div>
-                        <div style={{ fontSize: '10px', color: '#92400E' }}>
+                        <div style={{ fontSize: '10px', color: '#8B1A1A' }}>
                           ⭐ {a.rating} · {a.dist} away {a.ev ? '· 🔋 EV' : ''}
                         </div>
                       </div>
@@ -737,7 +683,6 @@ export function ComparisonScreen() {
               <ArrowRight size={12} color="white" strokeWidth={2.5} />
             </button>
           </div>
-        )}
       </motion.div>
 
       {/* INFO STRIP */}

@@ -575,7 +575,7 @@ export function HomeScreen() {
       </AnimatePresence>
 
       {/* Map controls */}
-      <div className="absolute z-10 flex flex-col gap-1.5" style={{ top: route ? '84px' : '58px', left: '12px' }}>
+      <div className="absolute z-10 flex flex-col gap-1.5" style={{ top: route ? '104px' : '78px', left: '12px' }}>
         {[
           { label: '+', action: () => {} },
           { label: '−', action: () => {} },
@@ -921,7 +921,7 @@ export function HomeScreen() {
           <div className="w-10 h-1 rounded-full" style={{ background: '#D4B8B8' }} />
         </button>
         <div className="px-4 pb-2">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col gap-2 mb-2">
             <div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full animate-pulse"
@@ -929,7 +929,7 @@ export function HomeScreen() {
                 <span style={{ fontSize: '14px', fontWeight: 700, color: '#1A1A1A' }}>
                   {mapUnlocked
                     ? `${autos.filter(a => a.seatsUsed < a.seatsTotal).length} Autos Live`
-                    : 'Tap LOCATE to reveal autos'}
+                    : 'Cycle/Walk to climb the Leaderboard.'}
                 </span>
               </div>
               {mapUnlocked && nearestAuto && (
@@ -940,11 +940,11 @@ export function HomeScreen() {
             </div>
             <button
               onClick={() => navigate('/compare')}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl"
-              style={{ background: 'linear-gradient(135deg, #8B1A1A, #A52A2A)', boxShadow: '0 3px 10px rgba(139,26,26,0.3)' }}
+              className="w-full flex items-center justify-center gap-1 px-3 py-2 rounded-xl"
+              style={{ background: 'linear-gradient(135deg, #8B1A1A, #A52A2A)', boxShadow: '0 3px 10px rgba(139,26,26,0.3)', lineHeight: '36px' }}
             >
               <Clock size={12} color="white" strokeWidth={2.5} />
-              <span style={{ fontSize: '11px', fontWeight: 700, color: 'white' }}>Compare</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'white' }}>Compare Route Timings</span>
             </button>
           </div>
 

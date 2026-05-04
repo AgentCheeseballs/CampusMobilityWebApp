@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   LogOut, TrendingUp, Award, Leaf, Battery, Zap,
-  ChevronRight, Star, Trophy, Users, BarChart3, Flame, X
+  ChevronRight, Star, Trophy, Users, BarChart3, Flame, X, Play
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { useAuth } from '../context/AuthContext';
@@ -289,6 +289,20 @@ export function ProfileScreen() {
               <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>
                 {Math.min(100, Math.round((user.stats.co2Saved / 20) * 100))}% of ₹12,000 EV battery goal
               </div>
+
+              <button
+                onClick={() => {}}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl mt-3"
+                style={{
+                  background: 'linear-gradient(135deg,#F59E0B,#D97706)',
+                  boxShadow: '0 6px 20px rgba(245,158,11,0.25)',
+                }}
+              >
+                <Play size={14} color="white" fill="white" strokeWidth={2} />
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'white' }}>
+                  🎬 Watch 5s Ad
+                </span>
+              </button>
             </div>
           </motion.div>
 
