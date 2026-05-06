@@ -160,7 +160,7 @@ export function ProfileScreen() {
       </div>
 
       {/* TAB BAR */}
-      <div className="flex mx-4 mt-4 mb-3 rounded-2xl p-1 flex-shrink-0 max-w-3xl md:mx-auto"
+      <div className="flex mx-4 mt-4 mb-3 rounded-2xl p-1 flex-shrink-0 max-w-5xl md:mx-auto"
         style={{ background: '#F5F0F0' }}>
         {([
           { id: 'stats', label: 'My Stats', icon: <BarChart3 size={14} strokeWidth={2.5} /> },

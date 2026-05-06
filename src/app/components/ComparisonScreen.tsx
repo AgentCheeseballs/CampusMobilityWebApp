@@ -399,9 +399,6 @@ export function ComparisonScreen() {
         </div>
         
         <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-            <motion.div initial={{ width: 0 }} animate={{ width: '70%' }} className="h-full rounded-full bg-[#8B1A1A]" />
-          </div>
           <span style={{ fontSize: '10px', color: '#8B1A1A', fontWeight: 700 }}>
             4.5 km/h · {formatDist(displayDist)}
           </span>
@@ -459,9 +456,6 @@ export function ComparisonScreen() {
         </div>
         
         <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-            <motion.div initial={{ width: 0 }} animate={{ width: '100%' }} className="h-full rounded-full bg-[#8B1A1A]" />
-          </div>
           <span style={{ fontSize: '10px', color: '#8B1A1A', fontWeight: 700 }}>
             12 km/h · {formatDist(displayDist)}
           </span>
@@ -644,8 +638,8 @@ export function ComparisonScreen() {
                 {/* Nearest autos */}
                 <div className="flex flex-col gap-1.5 mt-2">
                   {[
-                    { seats: '2 seats free', driver: 'Ramesh K.', rating: 4.8, ev: true, dist: '120m' },
-                    { seats: '1 seat free', driver: 'Suresh Y.', rating: 4.6, ev: true, dist: '280m' },
+                      { seats: '2 seats free', driver: 'Ramesh K.', phone: '98765 43210', ev: true, dist: '120m' },
+                      { seats: '1 seat free', driver: 'Suresh Y.', phone: '91234 56789', ev: true, dist: '280m' },
                   ].map((a, i) => (
                     <div key={i} className="flex items-center gap-2 px-2.5 py-2 rounded-xl"
                       style={{ background: '#FDF4F4', border: '1px solid #E8D0D0' }}>
@@ -655,7 +649,7 @@ export function ComparisonScreen() {
                           {a.driver} · {a.seats}
                         </div>
                         <div style={{ fontSize: '10px', color: '#8B1A1A' }}>
-                          ⭐ {a.rating} · {a.dist} away {a.ev ? '· 🔋 EV' : ''}
+                          📞 {a.phone} · {a.dist} away {a.ev ? '· 🔋 EV' : ''}
                         </div>
                       </div>
                     </div>
@@ -665,7 +659,6 @@ export function ComparisonScreen() {
               <div className="flex gap-2 flex-shrink-0">
                 {[
                   { icon: '💰', val: `₹${autoFare(dist)}`, lbl: 'Fare' },
-                  { icon: '💨', val: '0.12kg', lbl: 'CO₂' },
                 ].map((s, i) => (
                   <div key={i} className="px-2 py-2 rounded-xl text-center"
                     style={{ background: '#FBF5F5', border: '1px solid #EDE0E0', minWidth: '52px' }}>

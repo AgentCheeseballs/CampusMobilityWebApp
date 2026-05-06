@@ -253,29 +253,7 @@ export function IITDelhiMap({
       attribution: 'Tiles © Esri',
     }).addTo(map);
 
-    // Campus boundary
-    L.polygon([
-      [28.5398, 77.1875], [28.5398, 77.2005],
-      [28.5515, 77.2005], [28.5515, 77.1875],
-    ], {
-      color: '#FFD700', fillColor: '#FFD700', fillOpacity: 0.03,
-      weight: 2, dashArray: '6,5', opacity: 0.6,
-    }).addTo(map);
-
-    // IIT Delhi label
-    L.marker([28.5540, 77.1930], {
-      icon: L.divIcon({
-        html: `<div style="
-          background:linear-gradient(135deg,#8B1A1A,#A52A2A);
-          color:white;padding:4px 10px;border-radius:20px;
-          font-size:11px;font-weight:700;white-space:nowrap;
-          font-family:'Plus Jakarta Sans',sans-serif;
-          box-shadow:0 2px 8px rgba(139,26,26,0.5);
-          border:1px solid rgba(255,255,255,0.3);
-        ">🎓 IIT Delhi Campus</div>`,
-        className: '', iconSize: [140, 24], iconAnchor: [70, 12],
-      }),
-    }).addTo(map);
+    // Campus polygon and label removed per user request
 
     // Bus stops (static)
     busStops.forEach(stop => {
