@@ -113,7 +113,7 @@ function SlideToConfirm({ mode, onConfirm }: { mode: 'walk' | 'cycle'; onConfirm
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        className="absolute flex items-center justify-center rounded-[14px]"
+        className="absolute flex items-center justify-center rounded-full"
         style={{
           top: padding,
           left: padding + dragX,
@@ -369,14 +369,9 @@ export function ComparisonScreen() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span style={{ fontSize: '14px', fontWeight: 800, color: '#1A1A1A' }}>Walk</span>
-              <span className="px-1.5 py-px rounded-full"
-                style={{ fontSize: '9px', fontWeight: 800, color: 'white', background: '#8B1A1A' }}>
-                🌿 FREE
-              </span>
+              <span style={{ fontSize: '16px', fontWeight: 800, color: '#1A1A1A' }}>Walk</span>
             </div>
             <div className="flex flex-wrap items-center gap-x-1.5" style={{ fontSize: '11px', color: '#64748B' }}>
-              <span>🔥 {displayCalories('walk')} kcal</span>
             </div>
           </div>
           <div className="text-right flex-shrink-0 pr-7">
@@ -426,14 +421,9 @@ export function ComparisonScreen() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span style={{ fontSize: '14px', fontWeight: 800, color: '#1A1A1A' }}>Cycle</span>
-              <span className="px-1.5 py-px rounded-full"
-                style={{ fontSize: '9px', fontWeight: 800, color: 'white', background: '#8B1A1A' }}>
-                ⚡ FASTEST
-              </span>
+              <span style={{ fontSize: '16px', fontWeight: 800, color: '#1A1A1A' }}>Cycle</span>
             </div>
             <div className="flex flex-wrap items-center gap-x-1.5" style={{ fontSize: '11px', color: '#64748B' }}>
-              <span>🔥 {displayCalories('cycle')} kcal</span>
             </div>
           </div>
           <div className="text-right flex-shrink-0 pr-7">
@@ -492,9 +482,6 @@ export function ComparisonScreen() {
               </span>
             </motion.button>
 
-            <p className="text-center flex-shrink-0" style={{ fontSize: '10px', color: '#16A34A', fontWeight: 700 }}>
-              🌿 +0kg CO₂ saved · eco leaderboard points
-            </p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -559,7 +546,6 @@ export function ComparisonScreen() {
                   {forcedBusMins[key]} min
                 </div>
                 <div style={{ fontSize: '9px', color: '#94A3B8' }}>
-                  Next: {next.next}
                 </div>
               </div>
             </div>
@@ -649,7 +635,7 @@ export function ComparisonScreen() {
                           {a.driver} · {a.seats}
                         </div>
                         <div style={{ fontSize: '10px', color: '#8B1A1A' }}>
-                          📞 {a.phone} · {a.dist} away {a.ev ? '· 🔋 EV' : ''}
+                          📞 {a.phone} · {a.dist} away
                         </div>
                       </div>
                     </div>

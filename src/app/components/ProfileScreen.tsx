@@ -2,8 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  LogOut, TrendingUp, Award, Leaf, Battery, Zap,
-  ChevronRight, Star, Trophy, Users, BarChart3, Flame, X, Play
+  LogOut, Award, Leaf, Battery, Star, Trophy, Users, BarChart3, Flame, X, Play
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +29,8 @@ export function ProfileScreen() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<'stats' | 'leaderboard'>('stats');
   const [selectedAchievement, setSelectedAchievement] = useState<typeof ACHIEVEMENTS[0] | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const hiddenAchievementIds = new Set(['co2_hero', 'co2_10', 'co2_25']);
 
   const fullLeaderboard = useMemo(() => {
     if (!user) return BASE_LEADERBOARD;
@@ -54,12 +55,13 @@ export function ProfileScreen() {
   const userRank = fullLeaderboard.findIndex(e => e.id === 999) + 1;
 
   const donutData = [
-    { name: 'Eco Trips', value: Math.round((user?.stats.walkKm ?? 0) + (user?.stats.cycleKm ?? 0)), color: '#22C55E' },
-    { name: 'Auto Rides', value: (user?.stats.autoRides ?? 0) * 3, color: '#0EA5E9' },
+    { name: 'Eco Trips', value: Math.round((user?.stats.walkKm ?? 0) + (user?.stats.cycleKm ?? 0)), color: '#F59E0B' },
+    { name: 'Auto Rides', value: (user?.stats.autoRides ?? 0) * 3, color: '#15803D' },
   ];
   const totalEco = donutData[0].value + donutData[1].value || 1;
 
   const earned = ACHIEVEMENTS.filter(a => {
+    if (hiddenAchievementIds.has(a.id)) return false;
     if (a.id === 'eco_starter')  return (user?.stats.ecoScore ?? 0) >= a.threshold;
     if (a.id === 'first_steps')  return (user?.stats.walkKm ?? 0) >= a.threshold;
     if (a.id === 'walker_10')    return (user?.stats.walkKm ?? 0) >= a.threshold;
@@ -87,6 +89,35 @@ export function ProfileScreen() {
     if (a.id === 'eco_200')      return (user?.stats.ecoScore ?? 0) >= a.threshold;
     return false;
   });
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      // Never block the UI indefinitely if remote sign-out is slow.
+      await Promise.race([
+        logout(),
+        new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+      ]);
+    } catch (err) {
+      console.error('Logout failed from UI:', err);
+    } finally {
+      try {
+        navigate('/', { replace: true });
+      } catch {}
+
+      if (typeof window !== 'undefined') {
+        // Force redirect as a fallback for device/browser-specific router issues.
+        setTimeout(() => {
+          if (window.location.pathname !== '/') {
+            window.location.replace('/');
+          }
+        }, 80);
+      }
+
+      setIsLoggingOut(false);
+    }
+  };
 
   if (!user) return null;
 
@@ -119,34 +150,26 @@ export function ProfileScreen() {
               </div>
             </div>
             <button
-              onClick={async () => {
-                try {
-                  await logout();
-                  // Prefer SPA navigation, but force a full reload as a fallback
-                  navigate('/', { replace: true });
-                  setTimeout(() => {
-                    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-                      window.location.href = '/';
-                    }
-                  }, 200);
-                } catch (err) {
-                  console.error('Logout failed from UI:', err);
-                  try { window.location.href = '/'; } catch {}
-                }
-              }}
+              type="button"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              aria-label="Log out"
               className="w-9 h-9 flex items-center justify-center rounded-xl"
-              style={{ background: 'rgba(255,255,255,0.1)' }}>
-              <LogOut size={15} color="rgba(255,255,255,0.7)" />
+              style={{
+                background: 'rgba(255,255,255,0.1)',
+                opacity: isLoggingOut ? 0.75 : 1,
+                cursor: isLoggingOut ? 'wait' : 'pointer',
+              }}>
+              <LogOut size={15} color={isLoggingOut ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.7)'} />
             </button>
           </div>
 
           {/* Stats row */}
           <div className="flex gap-2">
             {[
-              { icon: '🌿', value: `${user.stats.ecoScore.toFixed(1)} km`, label: 'Eco Score', color: '#4ADE80' },
+              { icon: '⚡', value: `${user.stats.ecoScore.toFixed(1)} km`, label: 'Eco Score', color: '#F59E0B' },
               { icon: '🏆', value: userRank > 0 ? `#${userRank}` : '--', label: 'Campus Rank', color: '#FCD34D' },
               { icon: '🔥', value: `${user.stats.streak}d`, label: 'Streak', color: '#FCA5A5' },
-              { icon: '🌍', value: `${user.stats.co2Saved.toFixed(1)}kg`, label: 'CO₂ Saved', color: '#93C5FD' },
             ].map((s, i) => (
               <div key={i} className="flex-1 py-2.5 px-1 rounded-2xl flex flex-col items-center"
                 style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -195,15 +218,15 @@ export function ProfileScreen() {
                 <div style={{ fontSize: '11px', color: '#94A3B8' }}>Eco km vs auto rides</div>
               </div>
               <span className="px-2 py-1 rounded-lg"
-                style={{ fontSize: '10px', fontWeight: 700, color: '#15803D', background: '#DCFCE7' }}>
+                style={{ fontSize: '10px', fontWeight: 700, color: '#92400E', background: '#FFEDD5' }}>
                 This Month
               </span>
             </div>
             <div className="flex items-center">
               <div style={{ width: '130px', height: '130px', position: 'relative', flexShrink: 0 }}>
                 <PieChart width={130} height={130}>
-                    <Pie data={donutData} cx={65} cy={65} innerRadius={38} outerRadius={58}
-                      paddingAngle={4} dataKey="value" strokeWidth={0} startAngle={90} endAngle={-270}>
+                    <Pie data={donutData} cx="50%" cy="50%" innerRadius={38} outerRadius={58}
+                      paddingAngle={0} dataKey="value" strokeWidth={0} startAngle={90} endAngle={-270}>
                       {donutData.map((d, i) => <Cell key={i} fill={d.color} />)}
                     </Pie>
                     <Tooltip formatter={(v: number) => [`${v} km`, '']} />
@@ -212,7 +235,7 @@ export function ProfileScreen() {
                   <span style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>
                     {Math.round((donutData[0].value / totalEco) * 100)}%
                   </span>
-                  <span style={{ fontSize: '9px', color: '#22C55E', fontWeight: 700 }}>ECO</span>
+                  <span style={{ fontSize: '9px', color: '#F59E0B', fontWeight: 700 }}>ECO</span>
                 </div>
               </div>
               <div className="flex-1 pl-4">
@@ -225,14 +248,6 @@ export function ProfileScreen() {
                     </div>
                   </div>
                 ))}
-                <div className="p-2 rounded-xl" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-                  <div className="flex items-center gap-1">
-                    <TrendingUp size={11} color="#16A34A" strokeWidth={2.5} />
-                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#15803D' }}>
-                      {user.stats.co2Saved.toFixed(1)}kg CO₂ saved total
-                    </span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -240,10 +255,10 @@ export function ProfileScreen() {
           {/* Stat grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
             {[
-              { icon: '🚶', value: `${user.stats.walkKm.toFixed(1)} km`, label: 'Total Walked', color: '#F0FDF4', border: '#BBF7D0', text: '#15803D' },
-              { icon: '🚲', value: `${user.stats.cycleKm.toFixed(1)} km`, label: 'Total Cycled', color: '#FDF4F4', border: '#E8D0D0', text: '#8B1A1A' },
-              { icon: '🛺', value: `${user.stats.autoRides}`, label: 'Auto Rides', color: '#FEF9C3', border: '#FDE68A', text: '#92400E' },
-              { icon: '⚡', value: `${user.stats.ecoScore.toFixed(1)}`, label: 'Eco Score', color: '#F0FDF4', border: '#BBF7D0', text: '#15803D' },
+              { icon: '🚶', value: `${user.stats.walkKm.toFixed(1)} km`, label: 'Total Walked', color: '#FFEDD5', border: '#FDBA74', text: '#92400E' },
+              { icon: '🚲', value: `${user.stats.cycleKm.toFixed(1)} km`, label: 'Total Cycled', color: '#FFEDD5', border: '#FDBA74', text: '#92400E' },
+              { icon: '🛺', value: `${user.stats.autoRides}`, label: 'Auto Rides', color: '#FFEDD5', border: '#FDBA74', text: '#92400E' },
+              { icon: '⚡', value: `${user.stats.ecoScore.toFixed(1)}`, label: 'Eco Score', color: '#FFEDD5', border: '#FDBA74', text: '#92400E' },
             ].map((s, i) => (
               <motion.div key={i}
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -271,11 +286,7 @@ export function ProfileScreen() {
                 <span style={{ fontSize: '13px', fontWeight: 800, color: '#86EFAC' }}>EV BATTERY FUND</span>
               </div>
               <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '12px', lineHeight: 1.5 }}>
-                Your eco trips funded{' '}
-                <span style={{ fontWeight: 800, color: '#6EE7B7' }}>
-                  {Math.min(100, Math.round((user.stats.co2Saved / 20) * 100))}%
-                </span>
-                {' '}of an EV battery swap this month! 🌿
+                Watch an Ad while waiting to contribute to EV Battery Budget.
               </p>
               <div className="h-2.5 rounded-full overflow-hidden mb-1" style={{ background: 'rgba(255,255,255,0.15)' }}>
                 <motion.div
@@ -313,11 +324,11 @@ export function ProfileScreen() {
               <Award size={16} color="#F59E0B" />
               <span style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>Achievements</span>
               <span style={{ fontSize: '12px', color: '#94A3B8', marginLeft: 'auto' }}>
-                {earned.length}/{ACHIEVEMENTS.length}
+                {earned.length}/{ACHIEVEMENTS.filter(a => !hiddenAchievementIds.has(a.id)).length}
               </span>
             </div>
             <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-              {ACHIEVEMENTS.map(a => {
+              {ACHIEVEMENTS.filter(a => !hiddenAchievementIds.has(a.id)).map(a => {
                 const isEarned = earned.some(e => e.id === a.id);
                 return (
                   <button key={a.id} onClick={() => setSelectedAchievement(a)} className="flex flex-col items-center gap-1">
